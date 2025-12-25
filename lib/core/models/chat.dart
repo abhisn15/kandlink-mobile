@@ -76,7 +76,7 @@ class Conversation {
   final String id;
   final String? otherUserId;
   final String? groupId;
-  final ChatMessage lastMessage;
+  final ChatMessage? lastMessage;
   final int unreadCount;
   final DateTime lastActivity;
   final User? otherUser;
@@ -86,7 +86,7 @@ class Conversation {
     required this.id,
     this.otherUserId,
     this.groupId,
-    required this.lastMessage,
+    this.lastMessage,
     this.unreadCount = 0,
     required this.lastActivity,
     this.otherUser,
@@ -95,12 +95,12 @@ class Conversation {
 
   factory Conversation.fromJson(Map<String, dynamic> json) {
     return Conversation(
-      id: json['id'],
-      otherUserId: json['other_user_id'],
-      groupId: json['group_id'],
-      lastMessage: ChatMessage.fromJson(json['last_message']),
+      id: json['id'] ?? '',
+      otherUserId: json['other_user_id'] ?? json['otherUserId'],
+      groupId: json['group_id'] ?? json['groupId'],
+      lastMessage: json['last_message'] != null ? ChatMessage.fromJson(json['last_message']) : null,
       unreadCount: json['unread_count'] ?? 0,
-      lastActivity: DateTime.parse(json['last_activity']),
+      lastActivity: json['last_activity'] != null ? DateTime.parse(json['last_activity']) : DateTime.now(),
       otherUser: json['other_user'] != null ? User.fromJson(json['other_user']) : null,
       group: json['group'] != null ? Group.fromJson(json['group']) : null,
     );
@@ -116,6 +116,11 @@ class Conversation {
     if (otherUser != null) return otherUser!.profilePicture ?? '';
     if (group != null) return group!.avatar ?? '';
     return '';
+  }
+
+  String get lastMessageContent {
+    if (lastMessage != null) return lastMessage!.content;
+    return 'No messages';
   }
 }
 

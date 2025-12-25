@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:go_router/go_router.dart';
 import '../../../core/providers/group_provider.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/providers/chat_provider.dart';
@@ -91,7 +90,7 @@ class _GroupListScreenState extends State<GroupListScreen> {
       ),
       floatingActionButton: user?.role.name == 'pic'
           ? FloatingActionButton(
-              onPressed: () => context.go('/create-group'),
+              onPressed: () => Navigator.of(context).pushNamed(AppRoutes.createGroup),
               child: const Icon(Icons.add),
               tooltip: 'Create new group',
             )
@@ -134,7 +133,7 @@ class _GroupListScreenState extends State<GroupListScreen> {
             CustomButton(
               text: 'Create Group',
               icon: Icons.add,
-              onPressed: () => context.go('/create-group'),
+              onPressed: () => Navigator.of(context).pushNamed(AppRoutes.createGroup),
             ),
         ],
       ),
@@ -208,7 +207,7 @@ class _GroupListScreenState extends State<GroupListScreen> {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: InkWell(
-        onTap: () => context.go('/chat/group/${group.id}'),
+        onTap: () => Navigator.of(context).pushNamed(AppRoutes.groupChat(group.id!)),
         borderRadius: BorderRadius.circular(12),
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -301,7 +300,7 @@ class _GroupListScreenState extends State<GroupListScreen> {
                     if (conversation != null) ...[
                       const SizedBox(height: 4),
                       Text(
-                        conversation.lastMessage.content,
+                        conversation.lastMessageContent,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: Theme.of(context).textTheme.bodySmall?.color,
                         ),

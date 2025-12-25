@@ -44,6 +44,12 @@ class OfflineProvider with ChangeNotifier {
     }
   }
 
+  // Manual connectivity check
+  Future<void> checkConnectivity() async {
+    await _offlineService.checkConnectivityNow();
+    notifyListeners();
+  }
+
   // Get cache statistics
   Future<Map<String, dynamic>> getCacheStats() async {
     return await _syncService.getCacheStats();

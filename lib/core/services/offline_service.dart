@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -12,12 +13,16 @@ class OfflineService {
   final Connectivity _connectivity = Connectivity();
   late StreamSubscription<ConnectivityResult> _connectivitySubscription;
 
-  bool _isOnline = true;
+  bool _isOnline = false; // Start as offline, will be checked during init
   final StreamController<bool> _connectionController = StreamController<bool>.broadcast();
 
   // Queue for offline requests
   final List<Map<String, dynamic>> _offlineQueue = [];
   final String _queueKey = 'offline_queue';
+
+  // Internet connectivity check
+  Timer? _connectivityTimer;
+  static const String _testUrl = 'api-kandlink.tpmgroup.id';
 
   // Getters
   bool get isOnline => _isOnline;
@@ -28,7 +33,7 @@ class OfflineService {
   Future<void> initialize() async {
     // Check initial connectivity
     final result = await _connectivity.checkConnectivity();
-    _updateConnectionStatus(result);
+    await _updateConnectionStatus(result);
 
     // Listen for connectivity changes
     _connectivitySubscription = _connectivity.onConnectivityChanged.listen(
@@ -38,16 +43,28 @@ class OfflineService {
     // Load offline queue from storage
     await _loadOfflineQueue();
 
+    // Start periodic connectivity check
+    _startPeriodicConnectivityCheck();
+
     debugPrint('Offline service initialized. Online: $_isOnline');
   }
 
   // Update connection status
-  void _updateConnectionStatus(ConnectivityResult result) {
+  Future<void> _updateConnectionStatus(ConnectivityResult result) async {
     final wasOnline = _isOnline;
-    _isOnline = _isOnlineStatus(result);
+
+    // First check basic connectivity
+    final hasBasicConnectivity = result != ConnectivityResult.none;
+
+    if (hasBasicConnectivity) {
+      // If connected, do actual internet connectivity check
+      _isOnline = await _checkInternetConnectivity();
+    } else {
+      _isOnline = false;
+    }
 
     if (wasOnline != _isOnline) {
-      debugPrint('Connection status changed: $_isOnline');
+      debugPrint('Connection status changed: $_isOnline (connectivity: $result)');
       _connectionController.add(_isOnline);
 
       // If back online, process offline queue
@@ -57,8 +74,18 @@ class OfflineService {
     }
   }
 
-  // Check if connectivity result means online
-  bool _isOnlineStatus(ConnectivityResult result) {
+  // Check actual internet connectivity by pinging server
+  Future<bool> _checkInternetConnectivity() async {
+    try {
+      final result = await InternetAddress.lookup(_testUrl);
+      return result.isNotEmpty && result[0].rawAddress.isNotEmpty;
+    } on SocketException catch (_) {
+      return false;
+    }
+  }
+
+  // Check if connectivity result means basic connection exists
+  bool _hasBasicConnectivity(ConnectivityResult result) {
     return result != ConnectivityResult.none;
   }
 
@@ -158,9 +185,24 @@ class OfflineService {
     return List.from(_offlineQueue);
   }
 
+  // Start periodic connectivity check
+  void _startPeriodicConnectivityCheck() {
+    _connectivityTimer = Timer.periodic(const Duration(seconds: 30), (timer) async {
+      final result = await _connectivity.checkConnectivity();
+      await _updateConnectionStatus(result);
+    });
+  }
+
+  // Manual connectivity check
+  Future<void> checkConnectivityNow() async {
+    final result = await _connectivity.checkConnectivity();
+    await _updateConnectionStatus(result);
+  }
+
   // Dispose
   void dispose() {
     _connectivitySubscription.cancel();
+    _connectivityTimer?.cancel();
     _connectionController.close();
   }
 }

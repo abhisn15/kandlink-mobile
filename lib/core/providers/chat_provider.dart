@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import '../models/chat.dart' as chat_models;
 import '../models/user.dart';
 import '../models/chat.dart';
@@ -88,25 +89,29 @@ class ChatProvider with ChangeNotifier {
   }
 
   void _handleIncomingMessage(ChatMessage message) {
-    // Add to messages if it's the current chat
-    if (_currentChatId != null &&
-        ((message.receiverId == _currentChatId) ||
-         (message.groupId == _currentChatId) ||
-         (message.senderId == _currentChatId))) {
-      _messages.add(message);
-      notifyListeners();
-    }
+    // Schedule notification to next frame to avoid calling during build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Add to messages if it's the current chat
+      if (_currentChatId != null &&
+          ((message.receiverId == _currentChatId) ||
+           (message.groupId == _currentChatId) ||
+           (message.senderId == _currentChatId))) {
+        _messages.add(message);
+      }
 
-    // Update conversations
-    _updateConversationsWithMessage(message);
+      // Update conversations
+      _updateConversationsWithMessage(message);
 
-    // Update unread counts if not in current chat
-    if (_currentChatId == null ||
-        (_currentChatId != message.senderId && _currentChatId != message.groupId)) {
-      final key = message.groupId ?? message.senderId!;
-      _unreadCounts[key] = (_unreadCounts[key] ?? 0) + 1;
+      // Update unread counts if not in current chat
+      if (_currentChatId == null ||
+          (_currentChatId != message.senderId && _currentChatId != message.groupId)) {
+        final key = message.groupId ?? message.senderId!;
+        _unreadCounts[key] = (_unreadCounts[key] ?? 0) + 1;
+      }
+
+      // Notify listeners once after all updates
       notifyListeners();
-    }
+    });
   }
 
   void _updateConversationsWithMessage(ChatMessage message) {
@@ -421,7 +426,10 @@ class ChatProvider with ChangeNotifier {
   // Utility methods
   void _setLoading(bool loading) {
     _isLoading = loading;
-    notifyListeners();
+    // Schedule notification to next frame to avoid calling during build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
   }
 
   void _setError(String? error) {

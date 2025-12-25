@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:go_router/go_router.dart';
 import '../../../core/providers/auth_provider.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -55,9 +54,18 @@ class _SplashScreenState extends State<SplashScreen>
 
     if (mounted) {
       if (isAuthenticated) {
-        GoRouter.of(context).go('/home');
+        // Check if user has completed all requirements (email, whatsapp, area)
+        if (authProvider.isEmailVerified && authProvider.isWhatsappVerified && authProvider.user?.areaId != null) {
+          debugPrint('✅ Splash: User fully verified with area, going to home');
+        Navigator.of(context).pushNamedAndRemoveUntil('/home', (route) => false);
+        } else {
+          debugPrint('⚠️ Splash: User authenticated but incomplete, letting router handle redirect');
+          // Don't navigate - let router redirect handle it based on completion status
+          Navigator.of(context).pushNamedAndRemoveUntil('/home', (route) => false); // Router will redirect appropriately
+        }
       } else {
-        GoRouter.of(context).go('/login');
+        debugPrint('❌ Splash: User not authenticated, going to login');
+        Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
       }
     }
   }

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:go_router/go_router.dart';
 import '../../../core/providers/assignment_provider.dart';
 import '../../../core/models/assignment.dart';
+import '../../../ui/router/app_router.dart';
 import '../../widgets/common/custom_button.dart';
 
 class PICInfoScreen extends StatefulWidget {
@@ -95,7 +95,7 @@ class _PICInfoScreenState extends State<PICInfoScreen> {
                           const SizedBox(height: 24),
                           CustomButton(
                             text: 'Select Area',
-                            onPressed: () => context.go('/area-selection'),
+                            onPressed: () => Navigator.of(context).pushNamed(AppRoutes.areaSelection),
                           ),
                         ],
                       ),
@@ -253,10 +253,9 @@ class _PICInfoScreenState extends State<PICInfoScreen> {
           CustomButton(
             text: 'Start Chat with PIC',
             icon: Icons.chat,
-            onPressed: () {
-              // Navigate to chat screen with PIC
-              context.go('/chat/${assignment.picId}');
-            },
+            onPressed: assignment.picId != null
+                ? () => Navigator.of(context).pushNamed(AppRoutes.chat(assignment.picId!))
+                : null,
           ),
 
           const SizedBox(height: 16),
@@ -274,7 +273,7 @@ class _PICInfoScreenState extends State<PICInfoScreen> {
             text: 'View Assignment History',
             icon: Icons.history,
             outlined: true,
-            onPressed: () => context.go('/assignment-history'),
+            onPressed: () => Navigator.of(context).pushNamed(AppRoutes.assignmentHistory),
           ),
         ],
       ),

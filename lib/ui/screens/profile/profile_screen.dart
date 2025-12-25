@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:go_router/go_router.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/providers/notification_provider.dart';
+import '../../../ui/router/app_router.dart';
 import '../../widgets/common/custom_button.dart';
 
 class ProfileScreen extends StatelessWidget {
@@ -174,7 +174,7 @@ class ProfileScreen extends StatelessWidget {
               'Notification Settings',
               'Manage push notifications and preferences',
               Icons.notifications,
-              () => context.go('/notification-settings'),
+              () => Navigator.of(context).pushNamed(AppRoutes.notificationSettings),
             ),
 
             // Privacy Settings
@@ -378,7 +378,7 @@ class ProfileScreen extends StatelessWidget {
               Navigator.of(context).pop();
               await authProvider.logout();
               if (context.mounted) {
-                context.go('/login');
+                Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.login, (route) => false);
               }
             },
             style: TextButton.styleFrom(

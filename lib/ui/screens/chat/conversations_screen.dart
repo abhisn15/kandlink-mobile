@@ -1,20 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:go_router/go_router.dart';
 import '../../../core/providers/chat_provider.dart';
 import '../../../core/providers/auth_provider.dart';
+import '../../../core/providers/assignment_provider.dart';
 import '../../../core/utils/responsive_utils.dart';
+import '../../../ui/router/app_router.dart';
 import '../../widgets/common/custom_button.dart';
 import '../../widgets/common/responsive_scaffold.dart';
 
-class ChatListScreen extends StatefulWidget {
-  const ChatListScreen({super.key});
+class ConversationsScreen extends StatefulWidget {
+  const ConversationsScreen({super.key});
 
   @override
-  State<ChatListScreen> createState() => _ChatListScreenState();
+  State<ConversationsScreen> createState() => _ConversationsScreenState();
 }
 
-class _ChatListScreenState extends State<ChatListScreen> with WidgetsBindingObserver {
+class _ConversationsScreenState extends State<ConversationsScreen>
+    with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
@@ -131,7 +133,7 @@ class _ChatListScreenState extends State<ChatListScreen> with WidgetsBindingObse
           const SizedBox(height: 24),
           CustomButton(
             text: 'Find PIC',
-            onPressed: () => context.go('/home'),
+            onPressed: () => Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.home, (route) => false),
             icon: Icons.search,
           ),
         ],
@@ -172,7 +174,7 @@ class _ChatListScreenState extends State<ChatListScreen> with WidgetsBindingObse
 
           // Set current chat for message reading
           chatProvider.setCurrentChat(conversation.id);
-          context.go(route);
+          Navigator.of(context).pushNamed(route);
         },
         borderRadius: BorderRadius.circular(12),
         child: Padding(
@@ -325,43 +327,109 @@ class _ChatListScreenState extends State<ChatListScreen> with WidgetsBindingObse
             ),
             const SizedBox(height: 24),
 
-            // Chat with PIC option
-            _buildOptionButton(
-              context,
-              'Chat with PIC',
-              'Continue conversation with your assigned PIC',
-              Icons.person,
-              () {
-                Navigator.of(context).pop();
-                context.go('/pic-info');
+            // Chat with PIC option (for Candidates)
+            Consumer<AuthProvider>(
+              builder: (context, authProvider, child) {
+                if (authProvider.user?.role.name == 'user') {
+                  return _buildOptionButton(
+                    context,
+                    'Chat with PIC',
+                    'Continue conversation with your assigned PIC',
+                    Icons.person,
+                    () {
+                      Navigator.of(context).pop();
+                      final assignmentProvider = Provider.of<AssignmentProvider>(context, listen: false);
+                      if (assignmentProvider.currentAssignment != null &&
+                          assignmentProvider.currentAssignment!.picId != null) {
+                        Navigator.of(context).pushNamed(AppRoutes.chat(assignmentProvider.currentAssignment!.picId!));
+                      } else {
+                        Navigator.of(context).pushNamed(AppRoutes.picInfo);
+                      }
+                    },
+                  );
+                }
+                return const SizedBox.shrink();
               },
             ),
 
-            const SizedBox(height: 16),
-
-            // Join group option
-            _buildOptionButton(
-              context,
-              'Join Group Chat',
-              'Participate in group discussions',
-              Icons.group,
-              () {
-                Navigator.of(context).pop();
-                context.go('/groups');
+            // PIC Dashboard (for Candidates)
+            Consumer<AuthProvider>(
+              builder: (context, authProvider, child) {
+                if (authProvider.user?.role.name == 'user') {
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 16),
+                    child: _buildOptionButton(
+                      context,
+                      'My PIC Info',
+                      'View information about your assigned PIC',
+                      Icons.person_pin_circle,
+                      () {
+                        Navigator.of(context).pop();
+                        Navigator.of(context).pushNamed(AppRoutes.picInfo);
+                      },
+                    ),
+                  );
+                }
+                return const SizedBox.shrink();
               },
             ),
 
-            const SizedBox(height: 16),
+            // Join group option (for all users)
+            Padding(
+              padding: const EdgeInsets.only(top: 16),
+              child: _buildOptionButton(
+                context,
+                'Join Group Chat',
+                'Participate in group discussions',
+                Icons.group,
+                () {
+                  Navigator.of(context).pop();
+                  Navigator.of(context).pushNamed(AppRoutes.groups);
+                },
+              ),
+            ),
 
-            // Find new PIC option
-            _buildOptionButton(
-              context,
-              'Find New PIC',
-              'Get assigned to a different PIC',
-              Icons.search,
-              () {
-                Navigator.of(context).pop();
-                context.go('/area-selection');
+            // Find new PIC option (for Candidates)
+            Consumer<AuthProvider>(
+              builder: (context, authProvider, child) {
+                if (authProvider.user?.role.name == 'user') {
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 16),
+                    child: _buildOptionButton(
+                      context,
+                      'Find New PIC',
+                      'Get assigned to a different PIC',
+                      Icons.search,
+                      () {
+                        Navigator.of(context).pop();
+                        Navigator.of(context).pushNamed(AppRoutes.areaSelection);
+                      },
+                    ),
+                  );
+                }
+                return const SizedBox.shrink();
+              },
+            ),
+
+            // Create group option (for PICs)
+            Consumer<AuthProvider>(
+              builder: (context, authProvider, child) {
+                if (authProvider.user?.role.name == 'pic') {
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 16),
+                    child: _buildOptionButton(
+                      context,
+                      'Create Group',
+                      'Start a new group chat',
+                      Icons.group_add,
+                      () {
+                        Navigator.of(context).pop();
+                        Navigator.of(context).pushNamed(AppRoutes.createGroup);
+                      },
+                    ),
+                  );
+                }
+                return const SizedBox.shrink();
               },
             ),
           ],

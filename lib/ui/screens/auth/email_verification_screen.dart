@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:go_router/go_router.dart';
-import '../../../core/providers/auth_provider.dart';
+import '../../../core/providers/verification_provider.dart';
+import '../../../ui/router/app_router.dart';
 import '../../widgets/common/custom_button.dart';
 import '../../widgets/common/custom_text_field.dart';
 
@@ -9,7 +9,8 @@ class EmailVerificationScreen extends StatefulWidget {
   const EmailVerificationScreen({super.key});
 
   @override
-  State<EmailVerificationScreen> createState() => _EmailVerificationScreenState();
+  State<EmailVerificationScreen> createState() =>
+      _EmailVerificationScreenState();
 }
 
 class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
@@ -62,8 +63,9 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
       return;
     }
 
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final success = await authProvider.verifyEmail(token);
+    final verificationProvider =
+        Provider.of<VerificationProvider>(context, listen: false);
+    final success = await verificationProvider.verifyEmail(token);
 
     if (success && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -73,12 +75,20 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
         ),
       );
       // Router will automatically redirect to whatsapp verification
+    } else if (mounted && verificationProvider.error != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(verificationProvider.error!),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
   Future<void> _handleResendVerification() async {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final success = await authProvider.resendVerification('email');
+    final verificationProvider =
+        Provider.of<VerificationProvider>(context, listen: false);
+    final success = await verificationProvider.resendVerification('email');
 
     if (success && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -93,7 +103,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final authProvider = Provider.of<AuthProvider>(context);
+    final verificationProvider = Provider.of<VerificationProvider>(context);
 
     return Scaffold(
       appBar: AppBar(
@@ -134,8 +144,8 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
                     Text(
                       'We\'ve sent a verification code to your email',
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: Theme.of(context).textTheme.bodySmall?.color,
-                      ),
+                            color: Theme.of(context).textTheme.bodySmall?.color,
+                          ),
                       textAlign: TextAlign.center,
                     ),
                   ],
@@ -151,7 +161,8 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
                   color: Theme.of(context).colorScheme.surface,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
+                    color:
+                        Theme.of(context).colorScheme.outline.withOpacity(0.3),
                   ),
                 ),
                 child: Row(
@@ -167,9 +178,12 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
                         children: [
                           Text(
                             'Verification Code Sent',
-                            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleSmall
+                                ?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                ),
                           ),
                           const SizedBox(height: 4),
                           Text(
@@ -206,7 +220,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
               const SizedBox(height: 24),
 
               // Error Message
-              if (authProvider.error != null)
+              if (verificationProvider.error != null)
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
@@ -214,7 +228,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
-                    authProvider.error!,
+                    verificationProvider.error!,
                     style: TextStyle(
                       color: Theme.of(context).colorScheme.error,
                       fontSize: 14,
@@ -225,38 +239,54 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
               const SizedBox(height: 24),
 
               // Verify Button
-              CustomButton(
-                text: 'Verify Email',
-                onPressed: authProvider.isLoading ? null : _handleVerifyEmail,
-                isLoading: authProvider.isLoading,
-              ),
+              Consumer<VerificationProvider>(
+                  builder: (context, verificationProvider, child) {
+                return CustomButton(
+                  text: 'Verify Email',
+                  onPressed: verificationProvider.isLoading
+                      ? null
+                      : _handleVerifyEmail,
+                  isLoading: verificationProvider.isLoading,
+                );
+              }),
 
               const SizedBox(height: 16),
 
               // Resend Code
-              Center(
-                child: TextButton(
-                  onPressed: (_canResend && !authProvider.isLoading) ? _handleResendVerification : null,
-                  child: Text(
-                    _canResend
-                        ? 'Resend Verification Code'
-                        : 'Resend in ${_resendCountdown}s',
-                    style: TextStyle(
-                      color: _canResend
-                          ? Theme.of(context).colorScheme.primary
-                          : Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
-                      fontWeight: FontWeight.w600,
+              Consumer<VerificationProvider>(
+                  builder: (context, verificationProvider, child) {
+                return Center(
+                  child: TextButton(
+                    onPressed: (_canResend && !verificationProvider.isLoading)
+                        ? _handleResendVerification
+                        : null,
+                    child: Text(
+                      _canResend
+                          ? 'Resend Verification Code'
+                          : 'Resend in ${_resendCountdown}s',
+                      style: TextStyle(
+                        color: _canResend
+                            ? Theme.of(context).colorScheme.primary
+                            : Theme.of(context)
+                                .colorScheme
+                                .onSurface
+                                .withOpacity(0.5),
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
-                ),
-              ),
+                );
+              }),
 
               const SizedBox(height: 24),
 
               // Back to Login
               Center(
                 child: TextButton(
-                  onPressed: () => context.go('/login'),
+                  onPressed: () {
+                    Navigator.of(context).pushNamedAndRemoveUntil(
+                        AppRoutes.login, (route) => false);
+                  },
                   child: Text(
                     'Back to Login',
                     style: TextStyle(

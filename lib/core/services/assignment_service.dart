@@ -1,6 +1,4 @@
 import '../models/assignment.dart';
-import '../models/user.dart';
-import '../models/area.dart';
 import 'api_service.dart';
 import '../constants/api_endpoints.dart';
 
@@ -9,17 +7,17 @@ class AssignmentService {
 
   // Assign PIC to candidate (candidate only)
   Future<AssignmentResponse> assignPIC(String areaId) async {
-    final body = {'areaId': areaId};
-    final response = await _apiService.post(ApiEndpoints.assignPIC, body: body);
-    return AssignmentResponse.fromJson(response['data']);
+    final data = {'areaId': areaId};
+    final response = await _apiService.post(ApiEndpoints.assignPIC, data: data);
+    return AssignmentResponse.fromJson(response.data['data']);
   }
 
   // Get current PIC for candidate (candidate only)
   Future<Assignment?> getCurrentPIC() async {
     try {
       final response = await _apiService.get(ApiEndpoints.getCurrentPIC);
-      if (response['data'] != null) {
-        return Assignment.fromJson(response['data']);
+      if (response.data['data'] != null) {
+        return Assignment.fromJson(response.data['data']);
       }
       return null;
     } catch (e) {
@@ -33,18 +31,22 @@ class AssignmentService {
   // Get candidates for PIC (PIC only)
   Future<List<Assignment>> getCandidatesForPIC() async {
     final response = await _apiService.get(ApiEndpoints.getCandidatesForPIC);
-    final candidatesData = response['data']['candidates'] as List;
-    return candidatesData.map((candidate) => Assignment.fromJson(candidate)).toList();
+    final candidatesData = response.data['data']['candidates'] as List;
+    return candidatesData
+        .map((candidate) => Assignment.fromJson(candidate))
+        .toList();
   }
 
   // Redirect candidate to different area (PIC only)
-  Future<AssignmentResponse> redirectCandidate(String candidateId, String newAreaId) async {
-    final body = {
+  Future<AssignmentResponse> redirectCandidate(
+      String candidateId, String newAreaId) async {
+    final data = {
       'candidateId': candidateId,
       'newAreaId': newAreaId,
     };
-    final response = await _apiService.post(ApiEndpoints.redirectCandidate, body: body);
-    return AssignmentResponse.fromJson(response['data']);
+    final response =
+        await _apiService.post(ApiEndpoints.redirectCandidate, data: data);
+    return AssignmentResponse.fromJson(response.data['data']);
   }
 
   // Get assignment history
@@ -64,8 +66,11 @@ class AssignmentService {
     if (picId != null) queryParams['picId'] = picId;
     if (areaId != null) queryParams['areaId'] = areaId;
 
-    final response = await _apiService.get(ApiEndpoints.getAssignmentHistory, queryParams: queryParams);
-    final assignmentsData = response['data']['assignments'] as List;
-    return assignmentsData.map((assignment) => Assignment.fromJson(assignment)).toList();
+    final response = await _apiService.get(ApiEndpoints.getAssignmentHistory,
+        queryParameters: queryParams);
+    final assignmentsData = response.data['data']['assignments'] as List;
+    return assignmentsData
+        .map((assignment) => Assignment.fromJson(assignment))
+        .toList();
   }
 }

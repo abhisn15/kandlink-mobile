@@ -35,13 +35,13 @@ class User {
 
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
-      id: json['id'],
-      name: json['name'],
-      email: json['email'],
-      phone: json['phone'],
-      city: json['city'],
+      id: json['id'] ?? '',
+      name: json['name'] ?? '',
+      email: json['email'] ?? '',
+      phone: json['phone'] ?? '',
+      city: json['city'] ?? '',
       role: UserRole.values.firstWhere(
-        (role) => role.name == json['role'].toLowerCase(),
+        (role) => role.name == (json['role']?.toString().toLowerCase() ?? 'user'),
         orElse: () => UserRole.user,
       ),
       profilePicture: json['profile_picture'],
@@ -54,8 +54,12 @@ class User {
       whatsappVerifiedAt: json['whatsapp_verified_at'] != null
           ? DateTime.parse(json['whatsapp_verified_at'])
           : null,
-      createdAt: DateTime.parse(json['created_at']),
-      updatedAt: DateTime.parse(json['updated_at']),
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'])
+          : DateTime.now(),
+      updatedAt: json['updated_at'] != null
+          ? DateTime.parse(json['updated_at'])
+          : DateTime.now(),
     );
   }
 

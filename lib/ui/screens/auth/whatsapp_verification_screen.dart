@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:go_router/go_router.dart';
-import '../../../core/providers/auth_provider.dart';
+import '../../../core/providers/verification_provider.dart';
+import '../../../ui/router/app_router.dart';
 import '../../widgets/common/custom_button.dart';
 import '../../widgets/common/custom_text_field.dart';
 
@@ -62,8 +62,8 @@ class _WhatsappVerificationScreenState extends State<WhatsappVerificationScreen>
       return;
     }
 
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final success = await authProvider.verifyWhatsapp(code);
+    final verificationProvider = Provider.of<VerificationProvider>(context, listen: false);
+    final success = await verificationProvider.verifyWhatsapp(code);
 
     if (success && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -77,8 +77,8 @@ class _WhatsappVerificationScreenState extends State<WhatsappVerificationScreen>
   }
 
   Future<void> _handleResendVerification() async {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final success = await authProvider.resendVerification('whatsapp');
+    final verificationProvider = Provider.of<VerificationProvider>(context, listen: false);
+    final success = await verificationProvider.resendVerification('whatsapp');
 
     if (success && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -93,7 +93,7 @@ class _WhatsappVerificationScreenState extends State<WhatsappVerificationScreen>
 
   @override
   Widget build(BuildContext context) {
-    final authProvider = Provider.of<AuthProvider>(context);
+    final verificationProvider = Provider.of<VerificationProvider>(context);
 
     return Scaffold(
       appBar: AppBar(
@@ -207,20 +207,26 @@ class _WhatsappVerificationScreenState extends State<WhatsappVerificationScreen>
               const SizedBox(height: 24),
 
               // Error Message
-              if (authProvider.error != null)
-                Container(
+              Consumer<VerificationProvider>(
+                builder: (context, verificationProvider, child) {
+                  if (verificationProvider.error != null) {
+                    return Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: Theme.of(context).colorScheme.error.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
-                    authProvider.error!,
+                        verificationProvider.error!,
                     style: TextStyle(
                       color: Theme.of(context).colorScheme.error,
                       fontSize: 14,
                     ),
                   ),
+                    );
+                  }
+                  return const SizedBox.shrink();
+                },
                 ),
 
               const SizedBox(height: 24),
@@ -228,17 +234,18 @@ class _WhatsappVerificationScreenState extends State<WhatsappVerificationScreen>
               // Verify Button
               CustomButton(
                 text: 'Verify WhatsApp',
-                onPressed: authProvider.isLoading ? null : _handleVerifyWhatsapp,
-                isLoading: authProvider.isLoading,
+                onPressed: verificationProvider.isLoading ? null : _handleVerifyWhatsapp,
+                isLoading: verificationProvider.isLoading,
                 backgroundColor: Colors.green,
               ),
 
               const SizedBox(height: 16),
 
               // Resend Code
-              Center(
+              Consumer<VerificationProvider>(
+                builder: (context, verificationProvider, child) => Center(
                 child: TextButton(
-                  onPressed: (_canResend && !authProvider.isLoading) ? _handleResendVerification : null,
+                    onPressed: (_canResend && !verificationProvider.isLoading) ? _handleResendVerification : null,
                   child: Text(
                     _canResend
                         ? 'Resend Code via WhatsApp'
@@ -248,6 +255,7 @@ class _WhatsappVerificationScreenState extends State<WhatsappVerificationScreen>
                           ? Colors.green[700]
                           : Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
                       fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ),
@@ -258,7 +266,9 @@ class _WhatsappVerificationScreenState extends State<WhatsappVerificationScreen>
               // Skip Option (for development only - should be removed in production)
               Center(
                 child: TextButton(
-                  onPressed: () => context.go('/home'),
+                  onPressed: () {
+                    Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.home, (route) => false);
+                  },
                   child: Text(
                     'Skip for now (Development)',
                     style: TextStyle(

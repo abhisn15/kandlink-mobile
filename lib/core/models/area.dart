@@ -1,28 +1,21 @@
 class Area {
   final String id;
   final String name;
-  final String? description;
-  final bool isActive;
-  final DateTime createdAt;
-  final DateTime updatedAt;
+  final int lastPicIndex;
 
   Area({
     required this.id,
     required this.name,
-    this.description,
-    this.isActive = true,
-    required this.createdAt,
-    required this.updatedAt,
+    required this.lastPicIndex,
   });
 
   factory Area.fromJson(Map<String, dynamic> json) {
     return Area(
-      id: json['id'],
-      name: json['name'],
-      description: json['description'],
-      isActive: json['is_active'] ?? true,
-      createdAt: DateTime.parse(json['created_at']),
-      updatedAt: DateTime.parse(json['updated_at']),
+      id: json['id']?.toString() ?? '',
+      name: json['name']?.toString() ?? '',
+      lastPicIndex: json['last_pic_index'] is int
+          ? json['last_pic_index']
+          : int.tryParse(json['last_pic_index']?.toString() ?? '0') ?? 0,
     );
   }
 
@@ -30,10 +23,7 @@ class Area {
     return {
       'id': id,
       'name': name,
-      'description': description,
-      'is_active': isActive,
-      'created_at': createdAt.toIso8601String(),
-      'updated_at': updatedAt.toIso8601String(),
+      'last_pic_index': lastPicIndex,
     };
   }
 }

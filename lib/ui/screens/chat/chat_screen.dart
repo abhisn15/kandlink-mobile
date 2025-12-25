@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:go_router/go_router.dart';
 import '../../../core/providers/chat_provider.dart';
 import '../../../core/providers/auth_provider.dart';
+import '../../../core/providers/assignment_provider.dart';
 import '../../../core/models/chat.dart';
 import '../../../core/utils/responsive_utils.dart';
+import '../../../ui/router/app_router.dart';
 import '../../widgets/common/custom_button.dart';
 import '../../widgets/chat/message_bubble.dart';
 import '../../widgets/chat/message_input.dart';
@@ -121,10 +122,14 @@ class _ChatScreenState extends State<ChatScreen> {
   Widget build(BuildContext context) {
     final chatProvider = Provider.of<ChatProvider>(context);
     final authProvider = Provider.of<AuthProvider>(context);
+    final assignmentProvider = Provider.of<AssignmentProvider>(context);
     final isGroup = widget.groupId != null;
 
-    // Get chat title
+    // Get chat title and info
     String chatTitle = 'Chat';
+    String? chatAvatarUrl;
+    bool isOnline = false;
+
     if (isGroup) {
       // Find group name from conversations
       Conversation? conversation;
@@ -136,33 +141,51 @@ class _ChatScreenState extends State<ChatScreen> {
         conversation = null;
       }
       chatTitle = conversation?.displayName ?? 'Group Chat';
+      chatAvatarUrl = conversation?.displayAvatar;
     } else {
-      // Find user name from conversations
-      Conversation? conversation;
-      try {
-        conversation = chatProvider.conversations.firstWhere(
-          (conv) => conv.otherUserId == widget.userId,
-        );
-      } catch (e) {
-        conversation = null;
+      // For personal chats - prioritize PIC info from assignment
+      final currentAssignment = assignmentProvider.currentAssignment;
+      if (currentAssignment != null && currentAssignment.picId == widget.userId) {
+        // This is chat with assigned PIC
+        chatTitle = currentAssignment.pic?.name ?? 'PIC';
+        chatAvatarUrl = currentAssignment.pic?.profilePicture;
+        isOnline = currentAssignment.pic?.isOnline ?? false;
+      } else {
+        // Fallback to conversation data
+        Conversation? conversation;
+        try {
+          conversation = chatProvider.conversations.firstWhere(
+            (conv) => conv.otherUserId == widget.userId,
+          );
+        } catch (e) {
+          conversation = null;
+        }
+        chatTitle = conversation?.displayName ?? 'Chat';
+        chatAvatarUrl = conversation?.displayAvatar;
+        isOnline = conversation?.otherUser?.isOnline ?? false;
       }
-      chatTitle = conversation?.displayName ?? 'Chat';
     }
 
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.of(context).pop(),
+          tooltip: 'Back',
+        ),
         title: Row(
           children: [
             CircleAvatar(
               radius: 16,
-              backgroundColor: Theme.of(context).colorScheme.primary,
-              child: Text(
-                chatTitle.substring(0, 1).toUpperCase(),
+              backgroundImage: chatAvatarUrl != null ? NetworkImage(chatAvatarUrl!) : null,
+              backgroundColor: chatAvatarUrl == null ? Theme.of(context).colorScheme.primary : null,
+              child: chatAvatarUrl == null ? Text(
+                chatTitle.isNotEmpty ? chatTitle.substring(0, 1).toUpperCase() : '?',
                 style: TextStyle(
                   color: Theme.of(context).colorScheme.onPrimary,
                   fontWeight: FontWeight.bold,
                 ),
-              ),
+              ) : null,
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -179,9 +202,9 @@ class _ChatScreenState extends State<ChatScreen> {
                   ),
                   if (!isGroup)
                     Text(
-                      chatProvider.isConnected ? 'Online' : 'Offline',
+                      isOnline ? 'Online' : 'Offline',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: chatProvider.isConnected ? Colors.green : Colors.grey,
+                        color: isOnline ? Colors.green : Colors.grey,
                       ),
                     ),
                 ],
@@ -395,7 +418,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 Icons.person_outline,
                 () {
                   Navigator.of(context).pop();
-                  GoRouter.of(context).go('/pic-info');
+                  Navigator.of(context).pushNamed(AppRoutes.picInfo);
                 },
               ),
             ],

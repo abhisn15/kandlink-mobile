@@ -107,8 +107,8 @@ class SyncService {
     try {
       // Get conversations from API
       final apiResponse = await _apiService.get('/chat/conversations');
-      if (apiResponse['success'] == true) {
-        final conversationsData = apiResponse['data'] as List;
+      if (apiResponse.data['success'] == true) {
+        final conversationsData = apiResponse.data['data'] as List;
         final apiConversations = conversationsData.map((conv) {
           final convMap = conv as Map<String, dynamic>;
           return Conversation(
@@ -140,8 +140,8 @@ class SyncService {
     try {
       // Get current assignment from API
       final apiResponse = await _apiService.get('/assign/current');
-      if (apiResponse['success'] == true && apiResponse['data'] != null) {
-        final assignment = Assignment.fromJson(apiResponse['data']);
+      if (apiResponse.data['success'] == true && apiResponse.data['data'] != null) {
+        final assignment = Assignment.fromJson(apiResponse.data['data']);
 
         // Cache assignment locally
         await _localStorage.cacheAssignments([assignment]);
@@ -167,13 +167,13 @@ class SyncService {
 
           dynamic apiResponse;
           if (conversation.groupId != null) {
-            apiResponse = await _apiService.get('/chat/history?groupId=${conversation.groupId}', queryParams: queryParams);
+            apiResponse = await _apiService.get('/chat/history?groupId=${conversation.groupId}', queryParameters: queryParams);
           } else {
-            apiResponse = await _apiService.get('/chat/history?otherUserId=${conversation.otherUserId}', queryParams: queryParams);
+            apiResponse = await _apiService.get('/chat/history?otherUserId=${conversation.otherUserId}', queryParameters: queryParams);
           }
 
-          if (apiResponse['success'] == true) {
-            final messagesData = apiResponse['data']['messages'] as List;
+          if (apiResponse.data['success'] == true) {
+            final messagesData = apiResponse.data['data']['messages'] as List;
             final newMessages = messagesData.map((msg) => ChatMessage.fromJson(msg)).toList();
 
             if (newMessages.isNotEmpty) {

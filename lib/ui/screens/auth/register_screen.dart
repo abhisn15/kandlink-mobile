@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:go_router/go_router.dart';
 import '../../../core/providers/auth_provider.dart';
+import '../../../ui/router/app_router.dart';
 import '../../widgets/common/custom_button.dart';
 import '../../widgets/common/custom_text_field.dart';
 
@@ -21,8 +21,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _confirmPasswordController = TextEditingController();
   final _cityController = TextEditingController();
 
-  String _selectedRole = 'USER';
-
   @override
   void dispose() {
     _nameController.dispose();
@@ -37,6 +35,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Future<void> _handleRegister() async {
     if (!_formKey.currentState!.validate()) return;
 
+    debugPrint('📝 REGISTRATION_ATTEMPT: Starting registration process');
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final success = await authProvider.register(
       name: _nameController.text.trim(),
@@ -45,17 +44,24 @@ class _RegisterScreenState extends State<RegisterScreen> {
       password: _passwordController.text.trim(),
       passwordConfirmation: _confirmPasswordController.text.trim(),
       city: _cityController.text.trim(),
-      role: _selectedRole,
+      role: 'USER', // Fixed to USER (Candidate) only
     );
 
+    debugPrint('📝 REGISTRATION_RESULT: success=$success, mounted=$mounted');
+
     if (success && mounted) {
+      debugPrint('📝 REGISTRATION_SUCCESS: Showing snackbar and navigating to email verification');
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Registration successful! Please verify your email.'),
           backgroundColor: Colors.green,
         ),
       );
-      GoRouter.of(context).go('/email-verification');
+
+      debugPrint('📝 NAVIGATING_TO_EMAIL_VERIFICATION');
+      Navigator.of(context).pushNamed(AppRoutes.emailVerification);
+    } else {
+      debugPrint('📝 REGISTRATION_FAILED: No navigation');
     }
   }
 
@@ -93,12 +99,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ),
                       const SizedBox(height: 24),
                       Text(
-                        'Create Account',
+                        'Join as Candidate',
                         style: Theme.of(context).textTheme.displaySmall,
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Join KandLink community',
+                        'Connect with PICs in your area',
                         style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                           color: Theme.of(context).textTheme.bodySmall?.color,
                         ),
@@ -109,48 +115,47 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                 const SizedBox(height: 32),
 
-                // Role Selection
-                Text(
-                  'I am a:',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
+                // Role Info (Fixed to Candidate)
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
                   ),
                 ),
-                const SizedBox(height: 12),
-                Row(
+                  child: Row(
                   children: [
+                      Icon(
+                        Icons.person_search,
+                        color: Theme.of(context).colorScheme.primary,
+                        size: 24,
+                      ),
+                      const SizedBox(width: 12),
                     Expanded(
-                      child: RadioListTile<String>(
-                        title: const Text('Candidate'),
-                        subtitle: const Text('Looking for guidance'),
-                        value: 'USER',
-                        groupValue: _selectedRole,
-                        onChanged: (value) {
-                          setState(() {
-                            _selectedRole = value!;
-                          });
-                        },
-                        contentPadding: EdgeInsets.zero,
-                        dense: true,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Registering as Candidate',
+                              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                fontWeight: FontWeight.w600,
+                                color: Theme.of(context).colorScheme.primary,
                       ),
                     ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: RadioListTile<String>(
-                        title: const Text('PIC'),
-                        subtitle: const Text('Personal Information Counselor'),
-                        value: 'PIC',
-                        groupValue: _selectedRole,
-                        onChanged: (value) {
-                          setState(() {
-                            _selectedRole = value!;
-                          });
-                        },
-                        contentPadding: EdgeInsets.zero,
-                        dense: true,
+                            const SizedBox(height: 4),
+                            Text(
+                              'You will be connected with a PIC (Personal Information Counselor) in your area.',
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: Theme.of(context).textTheme.bodySmall?.color,
                       ),
                     ),
                   ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
 
                 const SizedBox(height: 24),
@@ -312,7 +317,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       style: Theme.of(context).textTheme.bodyMedium,
                     ),
                     TextButton(
-                      onPressed: () => context.go('/login'),
+                      onPressed: () => Navigator.of(context).pushNamed(AppRoutes.login),
                       child: Text(
                         'Sign In',
                         style: TextStyle(

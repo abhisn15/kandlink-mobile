@@ -81,7 +81,7 @@ class LocalStorageService {
           'id': conv.id,
           'otherUserId': conv.otherUserId,
           'groupId': conv.groupId,
-          'lastMessage': conv.lastMessage.toJson(),
+          'lastMessage': conv.lastMessage?.toJson(),
           'unreadCount': conv.unreadCount,
           'lastActivity': conv.lastActivity.toIso8601String(),
           'otherUser': conv.otherUser?.toJson(),
